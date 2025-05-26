@@ -5,13 +5,10 @@ require_once '../includes/session.php';
 require_once '../includes/db_connection.php';
 require_once '../includes/functions.php';
 
-// Verificar autenticación
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(403); 
-    echo "<h1>Error de acceso</h1>";
-    echo "<p>Debe iniciar sesión para acceder a esta función.</p>";
-    echo "<p><a href='../auth/login.php'>Iniciar sesión</a></p>";
-    exit;
+if (function_exists('redirect_if_not_authenticated')) {
+    redirect_if_not_authenticated('/auth/login.php', false);
+} elseif (!isset($_SESSION['user_id'])) {
+    exit("Acceso no autorizado");
 }
 
 // Verificar que se proporcionó un ID válido

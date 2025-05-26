@@ -3,20 +3,33 @@ require_once 'includes/session.php';
 require_once 'includes/db_connection.php';
 require_once 'includes/functions.php';
 
-
+// Verificar autenticación usando el sistema de API keys
 redirect_if_not_authenticated();
 
-require_once './includes/header.php';
+// Obtener información del usuario actual
+$username = htmlspecialchars($_SESSION['Username'] ?? '');
+$userType = $_SESSION['user_type'] ?? '';
 
+// Determinar título según rol
+$userTypeText = '';
+if ($userType === 'A') {
+    $userTypeText = 'Administrador';
+} elseif ($userType === 'O') {
+    $userTypeText = 'Oficial';
+} else {
+    $userTypeText = 'Usuario';
+}
+
+require_once './includes/header.php';
 ?>
 
 <div class="container">
-    <div class="jumbotron mt-4">
+    <div class="jumbotron mt-4 bg-light p-5 rounded">
         <h1 class="display-4">Sistema de Control Vehicular</h1>
-        <p class="lead">Bienvenido al sistema de administración vehicular, <?php echo htmlspecialchars($_SESSION['user_id']); ?>.</p>
+        <p class="lead">Bienvenido al sistema de administración vehicular, <strong><?php echo $username; ?></strong> (<?php echo $userTypeText; ?>).</p>
         <hr class="my-4">
         <p>Utilice el menú lateral para acceder a las diferentes funciones del sistema.</p>
-    </div>
+        
     
     <div class="row mt-4">
         <div class="col-md-4">

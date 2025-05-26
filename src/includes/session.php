@@ -1,54 +1,106 @@
 <?php
+// Iniciar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Función para verificar si el usuario está autenticado
+require_once __DIR__ . '/db_connection.php';
+
+/**
+ * Verifica si el usuario está autenticado
+ */
 function is_authenticated() {
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    return isset($_SESSION['Username']) && !empty($_SESSION['Username']);
 }
 
-// Función para verificar si el usuario es administrador
+/**
+ * Verifica si el usuario es administrador
+ */
 function is_admin() {
     return is_authenticated() && isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'A';
 }
 
-// Función para verificar el estado de la cuenta
+/**
+ * Verifica si la cuenta está activa
+ */
 function is_account_active() {
     return is_authenticated() && isset($_SESSION['user_status']) && $_SESSION['user_status'] == 1;
 }
 
-// Función para verificar si la cuenta está bloqueada
+/**
+ * Verifica si la cuenta está bloqueada
+ */
 function is_account_blocked() {
     return is_authenticated() && isset($_SESSION['user_blocked']) && $_SESSION['user_blocked'] == 1;
 }
 
-// Función para redirigir si no está autenticado
+/**
+ * Verifica si la API key es válida
+ */
+function is_api_key_valid() {
+    if (!is_authenticated() || !isset($_SESSION['api_key'])) {
+        return false;
+    }
+    
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) 
+            FROM usuarios 
+            WHERE Username = ? 
+            AND api_key = ? 
+            AND (key_expiry IS NULL OR key_expiry > NOW())
+        ");
+        $stmt->execute([$_SESSION['Username'], $_SESSION['api_key']]);
+        return (bool)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Error al verificar API key: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Redirige si no está autenticado o API key no válida
+ */
 function redirect_if_not_authenticated($redirect_url = '/auth/login.php') {
     if (!is_authenticated()) {
         header("Location: $redirect_url");
         exit;
     }
     
+    if (!is_api_key_valid()) {
+        session_unset();
+        session_destroy();
+        header("Location: $redirect_url");
+        exit;
+    }
+    
     if (is_account_blocked()) {
-        $_SESSION['error'] = "Tu cuenta ha sido bloqueada. Contacta al administrador.";
+        $_SESSION['error'] = "Tu cuenta ha sido bloqueada.";
+        session_unset();
+        session_destroy();
         header("Location: $redirect_url");
         exit;
     }
     
     if (!is_account_active()) {
-        $_SESSION['error'] = "Tu cuenta está desactivada. Contacta al administrador.";
+        $_SESSION['error'] = "Tu cuenta está desactivada.";
+        session_unset();
+        session_destroy();
         header("Location: $redirect_url");
         exit;
     }
 }
 
-// Función para redirigir si no es administrador
+/**
+ * Redirige si no es administrador
+ */
 function redirect_if_not_admin($redirect_url = '/index.php') {
     redirect_if_not_authenticated('/auth/login.php');
     
     if (!is_admin()) {
-        $_SESSION['error'] = "No tienes permiso para acceder a esta página.";
+        $_SESSION['error'] = "Acceso denegado.";
         header("Location: $redirect_url");
         exit;
     }

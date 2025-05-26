@@ -7,12 +7,10 @@ require_once '../includes/session.php';
 require_once '../includes/db_connection.php';
 require_once '../includes/functions.php';
 
-// Verificar autenticación
 if (function_exists('redirect_if_not_authenticated')) {
-    redirect_if_not_authenticated('/auth/login.php');
+    redirect_if_not_authenticated('/auth/login.php', false);
 } elseif (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
-    exit;
+    exit("Acceso no autorizado");
 }
 
 // Verificar que se proporcionó un ID válido

@@ -2,6 +2,7 @@
 require_once '../includes/db_connection.php';
 require_once '../includes/session.php';
 
+// Si ya está autenticado, redirigir
 if (is_authenticated()) {
     header("Location: /index.php");
     exit;
@@ -9,61 +10,83 @@ if (is_authenticated()) {
 
 $error = null;
 
-// Procesar el formulario de login
+/**
+ * Genera una API key única
+ */
+function generateAPIKey($pdo) {
+    do {
+        $bytes = random_bytes(32);
+        $apiKey = bin2hex($bytes);
+        
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE api_key = ?");
+        $stmt->execute([$apiKey]);
+        $exists = (bool)$stmt->fetchColumn();
+    } while ($exists);
+    
+    return $apiKey;
+}
+
+// Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    // Validar que se proporcionaron credenciales
     if (empty($username) || empty($password)) {
         $error = "Usuario y contraseña son obligatorios";
     } else {
         try {
-            // Buscar usuario en la base de datos
             $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE Username = ?");
             $stmt->execute([$username]);
-            $user = $stmt->fetch();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($user) {
-                // Verificar si la cuenta está bloqueada
-                if ($user['Bloquqo'] == 1) {
-                    $error = "Tu cuenta ha sido bloqueada. Contacta al administrador.";
+            if (!$user) {
+                $error = "Usuario no encontrado";
+            } else {
+                // Verificar estado de la cuenta
+                if ((int)$user['Bloquqo'] === 1) {
+                    $error = "Cuenta bloqueada. Contacta al administrador.";
                 } 
-                // Verificar si la cuenta está inactiva
-                else if ($user['Status'] == 0) {
-                    $error = "Tu cuenta está desactivada. Contacta al administrador.";
+                else if ((int)$user['Status'] === 0) {
+                    $error = "Cuenta desactivada. Contacta al administrador.";
                 } 
                 // Verificar contraseña
                 else if ($user['Password'] == $password) {
-                    // Login exitoso - resetear intentos
+                    // Resetear intentos
                     $updateStmt = $pdo->prepare("UPDATE usuarios SET Intentos = 0 WHERE Username = ?");
                     $updateStmt->execute([$username]);
                     
+                    // Generar API key
+                    $apiKey = generateAPIKey($pdo);
+                    $expiryDate = date('Y-m-d H:i:s', strtotime('+30 days'));
+                    
+                    // Guardar API key
+                    $keyStmt = $pdo->prepare("UPDATE usuarios SET api_key = ?, key_expiry = ? WHERE Username = ?");
+                    $keyStmt->execute([$apiKey, $expiryDate, $username]);
+                    
                     // Establecer variables de sesión
-                    $_SESSION['user_id'] = $user['Username'];
+                    $_SESSION['Username'] = $user['Username'];
                     $_SESSION['user_type'] = $user['Tipo'];
                     $_SESSION['user_status'] = $user['Status'];
                     $_SESSION['user_blocked'] = $user['Bloquqo'];
+                    $_SESSION['api_key'] = $apiKey;
                     
-                    // Redirigir a la página principal
+                    // Redirigir
                     header("Location: /index.php");
                     exit;
                 } else {
-                    $newAttempts = $user['Intentos'] + 1;
+                    // Incrementar intentos
+                    $newAttempts = (int)$user['Intentos'] + 1;
                     $blockAccount = $newAttempts >= 3;
                     
-                    // Actualizar intentos y posiblemente bloquear cuenta
                     $updateStmt = $pdo->prepare("UPDATE usuarios SET Intentos = ?, Bloquqo = ? WHERE Username = ?");
                     $updateStmt->execute([$newAttempts, $blockAccount ? 1 : $user['Bloquqo'], $username]);
                     
                     if ($blockAccount) {
-                        $error = "Demasiados intentos fallidos. Tu cuenta ha sido bloqueada.";
+                        $error = "Demasiados intentos fallidos. Cuenta bloqueada.";
                     } else {
                         $error = "Contraseña incorrecta. Intento " . $newAttempts . " de 3.";
                     }
                 }
-            } else {
-                $error = "Usuario no encontrado";
             }
         } catch (PDOException $e) {
             $error = "Error en el servidor: " . $e->getMessage();
@@ -72,21 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Control Vehicular</title>
+    <title>Iniciar Sesión</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-        }
+        body { background-color: #f8f9fa; }
+        .login-container { max-width: 400px; margin: 100px auto; }
         .card {
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

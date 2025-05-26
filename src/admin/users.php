@@ -4,7 +4,6 @@ require_once '../includes/functions.php';
 require_once '../includes/session.php';
 require_once '../auth/admin_check.php'; 
 
-// Obtener todos los usuarios
 try {
     $stmt = $pdo->query("SELECT * FROM usuarios ORDER BY Username");
     $usuarios = $stmt->fetchAll();
@@ -12,7 +11,6 @@ try {
     $error = "Error al obtener usuarios: " . $e->getMessage();
 }
 
-// Procesar acciones
 $success = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';

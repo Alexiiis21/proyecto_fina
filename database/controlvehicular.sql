@@ -320,7 +320,7 @@ INSERT INTO `tarjetascirculacion` (`ID_Tarjeta_Circulacion`, `ID_Propietario`, `
 
 --
 -- Estructura de tabla para la tabla `tarjetasverificacion`
---
+-- 
 
 CREATE TABLE `tarjetasverificacion` (
   `ID_Tarjeta_Verificacion` int(11) NOT NULL,

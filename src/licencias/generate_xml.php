@@ -1,22 +1,16 @@
 <?php
-// Iniciar buffer de salida
 ob_start();
 
-// Incluir archivos necesarios
 require_once '../includes/session.php';
 require_once '../includes/db_connection.php';
 require_once '../includes/functions.php';
 
-// IMPORTANTE: Cambia esta verificación para permitir a cualquier usuario autenticado
-// en lugar de solo administradores
-if (!isset($_SESSION['user_id'])) {
-    // Mostrar un mensaje de error amigable si no está autenticado
-    http_response_code(403); // Forbidden
-    echo "<h1>Error de acceso</h1>";
-    echo "<p>Debe iniciar sesión para acceder a esta función.</p>";
-    echo "<p><a href='../auth/login.php'>Iniciar sesión</a></p>";
-    exit;
+if (function_exists('redirect_if_not_authenticated')) {
+    redirect_if_not_authenticated('/auth/login.php', false);
+} elseif (!isset($_SESSION['user_id'])) {
+    exit("Acceso no autorizado");
 }
+
 
 // Verificar que se proporcionó un ID válido
 if (!isset($_GET['id']) || empty($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -29,9 +23,7 @@ if (!isset($_GET['id']) || empty($_GET['id']) || !is_numeric($_GET['id'])) {
 
 $id = (int)$_GET['id'];
 
-// Obtener datos de la licencia - CONSULTA CORREGIDA
 try {
-    // Primero obtenemos información básica de la licencia
     $stmt = $pdo->prepare("
         SELECT * FROM licencias WHERE ID_Licencia = ?
     ");
@@ -39,7 +31,7 @@ try {
     $licencia = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$licencia) {
-        http_response_code(404); // Not Found
+        http_response_code(404); 
         echo "<h1>Error: Licencia no encontrada</h1>";
         echo "<p>La licencia solicitada no existe.</p>";
         echo "<p><a href='javascript:history.back()'>Volver atrás</a></p>";
@@ -65,14 +57,13 @@ try {
     }
     
 } catch (PDOException $e) {
-    http_response_code(500); // Internal Server Error
+    http_response_code(500); 
     echo "<h1>Error de base de datos</h1>";
     echo "<p>Error al cargar los datos de la licencia: " . htmlspecialchars($e->getMessage()) . "</p>";
     echo "<p><a href='javascript:history.back()'>Volver atrás</a></p>";
     exit;
 }
 
-// Limpiar buffer antes de generar el XML
 ob_clean();
 
 // Generar XML

@@ -5,14 +5,21 @@ require_once '../includes/session.php';
 require_once '../includes/db_connection.php';
 require_once '../includes/functions.php';
 
+// Verificar autenticación usando el sistema de API keys
 redirect_if_not_authenticated('/auth/login.php');
-
 
 // Variable para indicar si esta página fue llamada desde otro formulario
 $esVentanaEmergente = isset($_GET['popup']) && $_GET['popup'] == 1;
 
 // Procesar el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verificación adicional para operaciones sensibles
+    if (!is_api_key_valid()) {
+        $_SESSION['error'] = "Por seguridad, debes iniciar sesión nuevamente para realizar esta acción.";
+        header("Location: ../auth/login.php");
+        exit;
+    }
+    
     $errores = [];
     
     // Validar campos obligatorios
@@ -32,6 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errores[] = "El código postal es obligatorio.";
     } elseif (!is_numeric($_POST['codigo_postal'])) {
         $errores[] = "El código postal debe ser numérico.";
+    } elseif (strlen($_POST['codigo_postal']) > 5) {
+        $errores[] = "El código postal no puede tener más de 5 dígitos.";
     }
     
     // Si no hay errores, proceder con la inserción
@@ -231,7 +240,7 @@ if (!$esVentanaEmergente) {
                         
                         <div class="mb-3">
                             <label for="referencia" class="form-label">Referencia</label>
-                            <textarea class="form-control" id="referencia" name="referencia" rows="2"><?php echo isset($_POST['referencia']) ? htmlspecialchars($_POST['referencia']) : ''; ?></textarea>
+                            <textarea class="form-control" id="referencia" name="referencia" rows="3"><?php echo isset($_POST['referencia']) ? htmlspecialchars($_POST['referencia']) : ''; ?></textarea>
                             <div class="form-text">Información adicional para facilitar la localización.</div>
                         </div>
                     </div>

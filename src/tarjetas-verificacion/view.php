@@ -22,7 +22,6 @@ if (!isset($_GET['id']) || empty($_GET['id']) || !is_numeric($_GET['id'])) {
 
 $id = (int)$_GET['id'];
 
-// Obtener datos completos de la tarjeta
 try {
     $stmt = $pdo->prepare("
         SELECT tv.*, 
@@ -152,7 +151,6 @@ require_once '../includes/header.php';
             </div>
         </div>
 
-        <!-- Información del Centro de Verificación -->
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-success text-white">
@@ -173,11 +171,7 @@ require_once '../includes/header.php';
                     </div>
                     <div class="row mb-2">
                         <div class="col-sm-4 fw-bold">Teléfono:</div>
-                        <div class="col-sm-8"><?php echo htmlspecialchars($tarjeta['CentroVerificacionTelefono']); ?></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-4 fw-bold">Email:</div>
-                        <div class="col-sm-8"><?php echo htmlspecialchars($tarjeta['CentroVerificacionEmail']); ?></div>
+                        <div class="col-sm-8"><?php echo htmlspecialchars($tarjeta['NumeroCentroVerificacion']); ?></div>
                     </div>
                 </div>
             </div>

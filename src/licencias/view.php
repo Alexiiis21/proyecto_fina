@@ -52,6 +52,9 @@ require_once '../includes/header.php';
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Detalles de Licencia</h1>
         <div>
+            <a href="generate_xml.php?id=<?php echo $id; ?>" class="btn btn-success me-2" target="_blank">
+                 <i class="bi bi-file-earmark-code"></i> Generar XML
+            </a>
             <a href="generate_pdf.php?id=<?php echo $id; ?>" class="btn btn-primary me-2" target="_blank">
                 <i class="bi bi-file-pdf"></i> Generar PDF
             </a>

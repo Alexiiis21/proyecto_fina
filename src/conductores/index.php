@@ -6,12 +6,8 @@ require_once '../includes/db_connection.php';
 require_once '../includes/functions.php';
 
 // Verificar autenticación
-if (function_exists('redirect_if_not_authenticated')) {
-    redirect_if_not_authenticated('/auth/login.php');
-} elseif (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
-    exit;
-}
+redirect_if_not_authenticated('/auth/login.php');
+
 
 // Manejar la eliminación de conductores
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete']) && isset($_POST['id'])) {

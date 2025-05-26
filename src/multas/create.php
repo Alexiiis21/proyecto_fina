@@ -203,17 +203,25 @@ require_once '../includes/header.php';
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_oficial" class="form-label">Oficial <span class="text-danger">*</span></label>
-                            <select class="form-select" id="id_oficial" name="id_oficial" required>
-                                <option value="">Seleccione un oficial...</option>
-                                <?php foreach ($oficiales as $oficial): ?>
-                                    <option value="<?php echo $oficial['ID_Oficial']; ?>" <?php echo (isset($idOficial) && $idOficial == $oficial['ID_Oficial']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($oficial['Nombre']); ?> 
-                                        (Placa: <?php echo htmlspecialchars($oficial['NumeroIdentificacion']); ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+    <label for="id_oficial" class="form-label">Oficial <span class="text-danger">*</span></label>
+    <div class="input-group">
+        <select class="form-select" id="id_oficial" name="id_oficial" required>
+            <option value="">Seleccione un oficial...</option>
+            <?php foreach ($oficiales as $oficial): ?>
+                <option value="<?php echo $oficial['ID_Oficial']; ?>" <?php echo (isset($idOficial) && $idOficial == $oficial['ID_Oficial']) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($oficial['Nombre']); ?> 
+                    (Placa: <?php echo htmlspecialchars($oficial['NumeroPlaca']); ?>)
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <button type="button" class="btn btn-outline-primary" onclick="openOficialPopup()">
+            <i class="bi bi-plus-circle"></i> Nuevo
+        </button>
+    </div>
+    <div class="form-text" id="oficial-help">
+        Seleccione un oficial existente o registre uno nuevo con el botón.
+    </div>
+</div>
                         
                         <div class="mb-3">
                             <label for="id_tarjeta" class="form-label">Tarjeta de Circulación <span class="text-danger">*</span></label>
@@ -251,6 +259,50 @@ require_once '../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+// Script para la gestión de oficiales en ventana emergente
+function openOficialPopup() {
+    // Abrir ventana emergente
+    const popupWindow = window.open('../oficiales/create.php?popup=1', 'nuevoOficial', 'width=800,height=600,scrollbars=yes');
+    
+    // Verificar si la ventana se abrió correctamente
+    if (popupWindow) {
+        popupWindow.focus();
+    } else {
+        alert('La ventana emergente fue bloqueada por el navegador. Por favor, permita ventanas emergentes para este sitio.');
+    }
+}
+
+// Función para recibir el nuevo oficial desde la ventana emergente
+function addOficial(oficial) {
+    const select = document.getElementById('id_oficial');
+    
+    // Crear una nueva opción para el select
+    const option = document.createElement('option');
+    option.value = oficial.id;
+    option.text = oficial.nombre + ' (Placa: ' + oficial.numeroPlaca + ')';
+    option.selected = true;
+    
+    // Agregar la opción al select
+    select.appendChild(option);
+    
+    // Mostrar mensaje de éxito temporal
+    const helpText = document.getElementById('oficial-help');
+    const originalText = helpText.innerHTML;
+    
+    helpText.innerHTML = '<span class="text-success">¡Oficial agregado correctamente!</span>';
+    helpText.classList.add('text-success');
+    
+    setTimeout(() => {
+        helpText.innerHTML = originalText;
+        helpText.classList.remove('text-success');
+    }, 3000);
+}
+
+// Para que la función sea accesible globalmente
+window.addOficial = addOficial;
+</script>
 
 <?php
 require_once '../includes/footer.php';
